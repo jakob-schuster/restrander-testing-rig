@@ -1,5 +1,5 @@
 use seq_io::fastq::{Reader,Record};
-use std::{str, ops::Index};
+use std::str;
 
 #[path = "paf.rs"] mod paf;
 use crate::paf::PafRead;
@@ -18,6 +18,14 @@ impl AccuracyResult {
             correct: result.correct as f64 / result.total() as f64,
             incorrect: result.incorrect as f64 / result.total() as f64,
             ambiguous: result.ambiguous as f64 / result.total() as f64,
+        }
+    }
+
+    fn to_percent(&self) -> AccuracyResult {
+        AccuracyResult { 
+            correct: self.correct * 100 as f64, 
+            incorrect: self.incorrect * 100 as f64, 
+            ambiguous: self.ambiguous * 100 as f64 
         }
     }
 }
@@ -57,7 +65,7 @@ pub fn parse_restrander (filename: String, paf_reads: &Vec<PafRead>) -> Accuracy
         i += 1;
     }
 
-    AccuracyResult::new(&result_exact)
+    AccuracyResult::new(&result_exact).to_percent()
 }
 
 pub fn parse_pychopper (filename: String, paf_reads: &Vec<PafRead>) {

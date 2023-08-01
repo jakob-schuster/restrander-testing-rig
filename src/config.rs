@@ -14,6 +14,12 @@ pub struct GenericProgramConfig {
     pub output: String,
 }
 
+impl fmt::Display for GenericProgramConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.input)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ProgramConfig {
     pub specific: SpecificProgramConfig,
@@ -26,7 +32,7 @@ impl fmt::Display for ProgramConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum SpecificProgramConfig {
     Restrander(RestranderConfig),
     Pychopper(PychopperConfig)
@@ -45,18 +51,18 @@ impl fmt::Display for SpecificProgramConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct PychopperConfig {
     pub backend: PychopperBackend,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct RestranderConfig {
     pub config_filename: String,
     pub error_rate: f64,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Hash, PartialOrd)]
 pub enum PychopperBackend {
     Edlib,
     MachineLearning

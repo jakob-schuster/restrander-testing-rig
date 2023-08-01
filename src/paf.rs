@@ -41,7 +41,7 @@ impl PafRead {
         return read;
     }
 
-    fn print (read: &PafRead) {
+    fn _print (read: &PafRead) {
         println!("{}, {}", read.name, read.strand);
     }
 }

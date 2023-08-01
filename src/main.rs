@@ -1,4 +1,6 @@
-use crate::{restrander::make_input_filename, config::RestranderConfig};
+use std::env;
+
+use crate::config::RestranderConfig;
 use config::ProgramResult;
 use itertools::iproduct;
 
@@ -10,16 +12,15 @@ mod fastq;
 mod config;
 
 fn main() {
-    // let error_rates = vec![0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
-    let mut error_rates: Vec<f64> = vec![];
-    for i in 0..10 {
-        error_rates.push((0.5 / 10 as f64) * (i as f64));
-    }
-
+    // preset array of error rates to test
+    let error_rates = vec![0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
+    
+    // collect the input filenames from the command line args
     let inputs = vec![
-        Input::new("aligned_reads.fq.gz", "aligned.paf"),
+        Input::new_from_args()
     ];
 
+    // perform the grid test as configured
     print_results(
         restrander_grid_test(inputs, restrander_generate_configs(error_rates)));
 }
@@ -31,9 +32,24 @@ struct Input {
 }
 
 impl Input {
-    pub fn new(fastq: &str, paf: &str) -> Input {
-        Input {fastq: make_input_filename(&fastq.to_string()), paf: make_input_filename(&paf.to_string())}
+    pub fn new_from_args() -> Input {
+        let args: Vec<String> = env::args().collect();
+
+        assert!(args.len() == 3);
+        Input { fastq: args[1].clone(), paf: args[2].clone() }
     }
+
+    pub fn _new(fastq: String, paf: String) -> Input {
+        Input {fastq: fastq, paf: paf}
+    }
+}
+
+fn _generate_error_rates(max: f64, step: i32) -> Vec<f64> {
+    let mut error_rates: Vec<f64> = vec![];
+    for i in 0..step {
+        error_rates.push((max / step as f64) * (i as f64));
+    }
+    error_rates
 }
 
 fn restrander_generate_configs(error_rates: Vec<f64>) -> Vec<RestranderConfig> {
@@ -58,12 +74,25 @@ fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<config::RestranderConfi
 
 fn print_results(results: Vec<ProgramResult>) {
     // print CSV header line
-    println!("config,correct_percent,incorrect_percent,ambiguous_percent,time_secs");
+    println!("input,config,correct_percent,incorrect_percent,ambiguous_percent,time_secs");
     
     // print each result
     results.iter()
-       .for_each(|result| println!("{},{},{},{},{}", result.config, result.accuracy.correct, result.accuracy.incorrect, result.accuracy.ambiguous, result.duration));
+       .for_each(|result| println!("{},{},{},{},{},{}", result.config.generic, result.config.specific, result.accuracy.correct, result.accuracy.incorrect, result.accuracy.ambiguous, result.duration));
 }
+
+// fn print_results_by_input(results: Vec<ProgramResult>) {
+//     let configs = results.iter()
+//         .map(|result| result.config.specific.clone())
+//         .unique();
+    
+//     let inputs = results.iter()
+//         .map(|result| result.config.generic.input.clone())
+//         .unique();
+
+//     results.iter();
+        
+// }
 
 /*
 fn pychopper_grid_test(inputs: Vec<Input>, configs: Vec<config::PychopperConfig>) {

@@ -3,21 +3,20 @@ use std::process::{Command, Output};
 use std::time::{Duration, Instant};
 
 use crate::paf::PafRead;
-use crate::{constants, paf, fastq};
+use crate::{constants, fastq};
 use crate::config::{self, ProgramResult};
-use crate::fastq::AccuracyResultExact;
 
-pub fn make_input_filename(input_filename: &String) -> String {
+pub fn _make_input_filename(input_filename: &String) -> String {
     format!("{}/{}", constants::DATA_PATH, input_filename)
 }
 
-pub fn make_output_filename(input_filename: &String, error_rate: f64) -> String {
+pub fn _make_output_filename(input_filename: &String, error_rate: f64) -> String {
     format!("{}_{}_restrander_out.fq", input_filename, error_rate)
 }
 
-pub fn timed_run(input_filename: &String, output_filename: &String, config_filename: &String) -> (Output, Duration) {
+pub fn _timed_run(input_filename: &String, output_filename: &String, config_filename: &String) -> (Output, Duration) {
     let start = Instant::now();
-    let output = run(input_filename, output_filename, config_filename);
+    let output = _run(input_filename, output_filename, config_filename);
     let duration = start.elapsed();
 
     return (output, duration)
@@ -53,7 +52,7 @@ pub fn accuracy_timed_run_config(generic_config: config::GenericProgramConfig, s
     }
 }
 
-pub fn run(input_filename: &String, output_filename: &String, config_filename: &String) -> Output {
+pub fn _run(input_filename: &String, output_filename: &String, config_filename: &String) -> Output {
     Command::new(constants::RESTRANDER_PATH)
             .arg(input_filename)
             .arg(output_filename)
