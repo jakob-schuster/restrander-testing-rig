@@ -6,10 +6,6 @@ use crate::paf::PafRead;
 use crate::{constants, fastq};
 use crate::config::{self, ProgramResult};
 
-pub fn _make_input_filename(input_filename: &String) -> String {
-    format!("{}/{}", constants::DATA_PATH, input_filename)
-}
-
 pub fn _make_output_filename(input_filename: &String, error_rate: f64) -> String {
     format!("{}_{}_restrander_out.fq", input_filename, error_rate)
 }
