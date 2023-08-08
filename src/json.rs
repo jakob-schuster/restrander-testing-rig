@@ -61,7 +61,7 @@ fn default_config_pcb111(error_rate: f64) -> Value {
             }
         ],
         "silent": false,
-        "exclude-unknowns": true,
+        "exclude-unknowns": false,
         "error-rate": error_rate
     })
 }
