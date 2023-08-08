@@ -13,7 +13,7 @@ mod config;
 
 fn main() {
     // preset array of error rates to test
-    let error_rates = vec![0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
+    let error_rates = vec![0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70];
     
     // collect the input filenames from the command line args
     let inputs = vec![
@@ -74,11 +74,11 @@ fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<config::RestranderConfi
 
 fn print_results(results: Vec<ProgramResult>) {
     // print CSV header line
-    println!("input,config,correct_percent,incorrect_percent,ambiguous_percent,time_secs");
+    println!("config,correct_percent,incorrect_percent,ambiguous_percent,time_secs");
     
     // print each result
     results.iter()
-       .for_each(|result| println!("{},{},{},{},{},{}", result.config.generic, result.config.specific, result.accuracy.correct, result.accuracy.incorrect, result.accuracy.ambiguous, result.duration));
+       .for_each(|result| println!("{},{},{},{},{}", result.config.specific, result.accuracy.correct, result.accuracy.incorrect, result.accuracy.ambiguous, result.duration));
 }
 
 // fn print_results_by_input(results: Vec<ProgramResult>) {
