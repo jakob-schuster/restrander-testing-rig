@@ -43,12 +43,35 @@ fn default_config(error_rate: f64) -> Value {
     })
 }
 
+fn default_config_pcb111(error_rate: f64) -> Value {
+    json!({
+        "name": "PCB111",
+        "description": "Looks for the standard TSO (SSP) and RTP (VNP) used in PCB111 chemistry.",
+        "pipeline": [
+            {
+                "type": "poly",
+                "tail-length": 12,
+                "search-size": 200
+            },
+            {
+                "type": "primer",
+                "tso": "TTTCTGTTGGTGCTGATATTGCTTT",
+                "rtp": "CTTGCCTGTCGCTCTATCTTCAGAGGAG",
+                "report-artefacts": true
+            }
+        ],
+        "silent": false,
+        "exclude-unknowns": true,
+        "error-rate": error_rate
+    })
+}
+
 pub fn make_configs(error_rates: Vec<f64>) -> Vec<String> {
     let base_filepath: &Path = Path::new(constants::CONFIG_PATH);
     
     // construct a bunch of json bodies
     let jsons = error_rates.iter()
-        .map(|e| -> Value {default_config(*e)})
+        .map(|e| -> Value {default_config_pcb111(*e)})
         .map(|v| v.to_string());
 
     let filenames: Vec<String> = error_rates.iter()

@@ -54,6 +54,8 @@ pub fn parse_restrander (filename: String, paf_reads: &Vec<PafRead>) -> Accuracy
     let mut i: usize = 0;
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
+        let name = record.id().unwrap().split("|").collect::<Vec<_>>()[1];
+        println!("{} vs {}", name, paf_reads[i].name);
         let current = *record.head().last().unwrap();
         if current == 63 {
             result_exact.ambiguous += 1;
