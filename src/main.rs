@@ -1,46 +1,69 @@
-use std::env;
+use std::{env, fs, process::Command};
 
-use crate::config::RestranderConfig;
-use config::ProgramResult;
-use itertools::iproduct;
+use config::{ProgramResult, PychopperConfig, SpecificProgramConfig};
+use itertools::{iproduct, Itertools};
 
 mod constants;
 mod json;
 mod restrander;
+mod pychopper;
 mod paf;
 mod fastq;
 mod config;
 
 fn main() {
-    // preset array of error rates to test
-    let error_rates = vec![0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70];
-    
     // collect the input filenames from the command line args
-    let inputs = vec![
-        Input::new_from_args()
+    let input = Input::new_from_args();
+
+    // make the configs
+    // json::make_desired_configs(input.clone().config_dir, config::Protocol::PCB109);
+
+    // get all the configs from the given config location
+    let restrander_configs = get_paths(input.clone().config_dir);
+    let pychopper_configs = vec![
+        SpecificProgramConfig::Pychopper(PychopperConfig { 
+            backend: config::PychopperBackend::Edlib 
+        }),
+        SpecificProgramConfig::Pychopper(PychopperConfig { 
+            backend: config::PychopperBackend::MachineLearning
+        })
     ];
 
     // perform the grid test as configured
-    print_results(
-        restrander_grid_test(inputs, restrander_generate_configs(error_rates)));
+    let results = restrander_grid_test(vec![input.clone()], restrander_configs).into_iter()
+        .chain(pychopper_grid_test(vec![input.clone()], pychopper_configs).into_iter())
+        .collect_vec();
+
+    // prettyprint it
+    print_results(results);
+}
+
+// get config paths
+fn get_paths(config_dir: String) -> Vec<String> {
+    fs::read_dir(config_dir)
+        .unwrap()
+        .into_iter()
+        .map(|path| -> String {path.unwrap().path().to_str().unwrap().to_string()})
+        .collect_vec()
 }
 
 #[derive(Clone)]
 struct Input {
     fastq: String,
     paf: String,
+    config_dir: String
 }
 
 impl Input {
     pub fn new_from_args() -> Input {
         let args: Vec<String> = env::args().collect();
 
-        assert!(args.len() == 3);
-        Input { fastq: args[1].clone(), paf: args[2].clone() }
+        assert!(args.len() == 4);
+        Input { fastq: args[1].clone(), paf: args[2].clone(), config_dir: args[3].clone() }
     }
 
-    pub fn _new(fastq: String, paf: String) -> Input {
-        Input {fastq: fastq, paf: paf}
+    pub fn _new(fastq: String, paf: String, config_dir: String) -> Input {
+        Input {fastq, paf, config_dir}
     }
 }
 
@@ -52,23 +75,40 @@ fn _generate_error_rates(max: f64, step: i32) -> Vec<f64> {
     error_rates
 }
 
-fn restrander_generate_configs(error_rates: Vec<f64>) -> Vec<RestranderConfig> {
-    // make all the config files
-    let config_filenames = json::make_configs(error_rates.clone());
+// fn restrander_generate_configs(error_rates: Vec<f64>, protocols: Vec<Protocol>) -> Vec<RestranderConfig> {
+//     // make all the config files
+//     let config_filenames = json::make_configs(error_rates.clone());
 
-    // compile it all together correctly
-    error_rates.iter()
-        .zip(config_filenames)
-        .map(|(error_rate, config_filename)| RestranderConfig{config_filename: config_filename, error_rate: *error_rate})
+//     // compile it all together correctly
+//     iproduct!(error_rates, protocols)
+//     error_rates.iter()
+//         .product(protocols)
+//         .zip(config_filenames)
+//         .map(|(error_rate, config_filename)| RestranderConfig{config_filename: config_filename, error_rate: *error_rate})
+//         .collect()
+// }
+
+fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<String>) -> Vec<config::ProgramResult> {
+    // run restrander on the product of inputs and configs
+    iproduct!(inputs, configs)
+        .map(|(input, config)| (
+            config::GenericProgramConfig{
+                input: input.fastq.clone(), 
+                output: constants::OUTPUT_FILENAME.to_string()
+            }, 
+            config, 
+            paf::parse(input.paf.clone())))
+        .map(|(generic_config, restrander_config, paf_reads)| 
+            restrander::accuracy_timed_run_config(generic_config, restrander_config, &paf_reads))
         .collect()
 }
 
-fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<config::RestranderConfig>) -> Vec<config::ProgramResult> {
-    // run restrander on the product of inputs and configs
+fn pychopper_grid_test(inputs: Vec<Input>, configs: Vec<SpecificProgramConfig>) -> Vec<config::ProgramResult> {
+    // run pychopper on the product of inputs and configs
     iproduct!(inputs, configs)
         .map(|(input, config)| (config::GenericProgramConfig{input: input.fastq.clone(), output: constants::OUTPUT_FILENAME.to_string()}, config, paf::parse(input.paf.clone())))
         .map(|(generic_config, restrander_config, paf_reads)| 
-            restrander::accuracy_timed_run_config(generic_config, restrander_config, &paf_reads))
+            pychopper::accuracy_timed_run_config(generic_config, restrander_config, &paf_reads))
         .collect()
 }
 

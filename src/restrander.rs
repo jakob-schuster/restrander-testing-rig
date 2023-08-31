@@ -2,6 +2,7 @@ use std::fs::remove_file;
 use std::process::{Command, Output};
 use std::time::{Duration, Instant};
 
+use crate::json::Config;
 use crate::paf::PafRead;
 use crate::{constants, fastq};
 use crate::config::{self, ProgramResult};
@@ -18,33 +19,31 @@ pub fn _timed_run(input_filename: &String, output_filename: &String, config_file
     return (output, duration)
 }
 
-pub fn accuracy_timed_run_config(generic_config: config::GenericProgramConfig, specific_config: config::RestranderConfig, paf_reads: &Vec<PafRead>) -> config::ProgramResult {
+pub fn accuracy_timed_run_config(generic_config: config::GenericProgramConfig, specific_config: String, paf_reads: &Vec<PafRead>) -> config::ProgramResult {
     // run it and time it
     let start = Instant::now();
     Command::new(constants::RESTRANDER_PATH)
             .arg(generic_config.clone().input)
             .arg(generic_config.clone().output)
-            .arg(specific_config.clone().config_filename)
+            .arg(specific_config.clone())
             .output()
             .expect("restrander failed to start");
     let duration = start.elapsed();
 
     // determine the accuracy
-    let accuracy = fastq::parse_restrander(generic_config.clone().output, paf_reads);
+    let accuracy = fastq::parse(generic_config.clone().output, paf_reads);
 
     // delete the file if necessary
-    if true {
-        remove_file(generic_config.clone().output).expect("Couldn't delete file!");
-    }
+    remove_file(generic_config.clone().output).expect("Couldn't delete file!");
 
     // combine all this together to build the result
     ProgramResult {
         duration: duration.as_secs(),
         config: config::ProgramConfig {
             generic: generic_config, 
-            specific: config::SpecificProgramConfig::Restrander(specific_config.clone())
+            specific: config::SpecificProgramConfig::Restrander(config::RestranderConfig { config_filename: specific_config.clone() })
         },
-        accuracy: accuracy
+        accuracy
     }
 }
 

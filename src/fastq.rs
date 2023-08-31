@@ -42,17 +42,19 @@ impl AccuracyResultExact {
     }
 }
 
-pub fn parse_restrander (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
+pub fn parse (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
     let mut result_exact: AccuracyResultExact = AccuracyResultExact {
         correct: 0, 
         incorrect: 0, 
         ambiguous: 0,
     };
 
+    println!("filenooom is {}", filename);
     let mut reader = Reader::from_path(filename).unwrap();
 
     let mut i: usize = 0;
 
+    println!("we've got {} paf reads and we're about to parse", paf_reads.len());
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
         let name = record.id().unwrap().split("|").collect::<Vec<_>>()[0];
@@ -73,44 +75,49 @@ pub fn parse_restrander (filename: String, paf_reads: &Vec<PafRead>) -> Accuracy
         i += 1;
     }
 
+    println!("read {} records", i);
     AccuracyResult::new(&result_exact).to_percent()
 }
 
-pub fn parse_pychopper (filename: String, paf_reads: &Vec<PafRead>) {
 
-    let mut correct = 0;
-    let mut incorrect = 0;
-    let mut ambiguous = 0;
+pub fn parse_pychopper (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
+    let mut result_exact: AccuracyResultExact = AccuracyResultExact {
+        correct: 0, 
+        incorrect: 0, 
+        ambiguous: 0,
+    };
 
+    println!("filenooom is {}", filename);
     let mut reader = Reader::from_path(filename).unwrap();
 
     let mut i: usize = 0;
+
+    println!("we've got {} paf reads and we're about to parse", paf_reads.len());
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
-        
         let name = record.id().unwrap().split("|").collect::<Vec<_>>()[1];
-        println!("{} vs {}", name, paf_reads[i].name);
-        while name != paf_reads[i].name {
-            println!("{} vs {} not the same so incrementing", name, paf_reads[i].name);
-            i += 1;
-        }
-        println!("{} vs {} are the same", name, paf_reads[i].name);
         
-        // print!("{} vs {}\n", record.head().last().unwrap(), paf_reads[i].strand as u8);
+        // skip non-matching records
+        while name != paf_reads[i].name {
+            i += 1;
+            result_exact.ambiguous += 1;
+        }
+
         let current = *record.head().last().unwrap();
         if current == 63 {
-            ambiguous += 1;
+            result_exact.ambiguous += 1;
         } else if current == paf_reads[i].strand as u8 {
-            correct += 1;
+            result_exact.correct += 1;
         } else {
-            incorrect += 1;
+            result_exact.incorrect += 1;
         }
         i += 1;
     }
 
-    print!("Correct: {}\nIncorrect: {}\nAmbiguous: {}\n", correct, incorrect, ambiguous);
-
+    println!("read {} records, sum of accuracyresult is {}", i, result_exact.ambiguous + result_exact.correct + result_exact.incorrect);
+    AccuracyResult::new(&result_exact).to_percent()
 }
+
 
 pub fn parse_nanoprep (filename: String, paf_reads: &Vec<PafRead>) {
 
