@@ -21,7 +21,12 @@ fn main() {
     // get all the configs from the given config location
     let restrander_configs = get_paths(input.clone().config_dir);
     let pychopper_configs = vec![
-        
+        SpecificProgramConfig::Pychopper(PychopperConfig { 
+            backend: config::PychopperBackend::Edlib 
+        }),
+        SpecificProgramConfig::Pychopper(PychopperConfig { 
+            backend: config::PychopperBackend::MachineLearning
+        })
     ];
 
     // perform the grid test as configured
