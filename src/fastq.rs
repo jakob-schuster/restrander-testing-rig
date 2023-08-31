@@ -49,12 +49,10 @@ pub fn parse (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
         ambiguous: 0,
     };
 
-    println!("filenooom is {}", filename);
     let mut reader = Reader::from_path(filename).unwrap();
 
     let mut i: usize = 0;
 
-    println!("we've got {} paf reads and we're about to parse", paf_reads.len());
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
         let name = record.id().unwrap().split("|").collect::<Vec<_>>()[0];
@@ -75,7 +73,6 @@ pub fn parse (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
         i += 1;
     }
 
-    println!("read {} records", i);
     AccuracyResult::new(&result_exact).to_percent()
 }
 
@@ -87,12 +84,10 @@ pub fn parse_pychopper (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyR
         ambiguous: 0,
     };
 
-    println!("filenooom is {}", filename);
     let mut reader = Reader::from_path(filename).unwrap();
 
     let mut i: usize = 0;
 
-    println!("we've got {} paf reads and we're about to parse", paf_reads.len());
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
         let name = record.id().unwrap().split("|").collect::<Vec<_>>()[1];
@@ -114,7 +109,6 @@ pub fn parse_pychopper (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyR
         i += 1;
     }
 
-    println!("read {} records, sum of accuracyresult is {}", i, result_exact.ambiguous + result_exact.correct + result_exact.incorrect);
     AccuracyResult::new(&result_exact).to_percent()
 }
 

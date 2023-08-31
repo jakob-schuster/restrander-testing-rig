@@ -16,17 +16,12 @@ fn main() {
     let input = Input::new_from_args();
 
     // make the configs
-    // json::make_desired_configs(input.clone().config_dir, config::Protocol::PCB109);
+    json::make_desired_configs(input.clone().config_dir, config::Protocol::PCB111);
 
     // get all the configs from the given config location
     let restrander_configs = get_paths(input.clone().config_dir);
     let pychopper_configs = vec![
-        SpecificProgramConfig::Pychopper(PychopperConfig { 
-            backend: config::PychopperBackend::Edlib 
-        }),
-        SpecificProgramConfig::Pychopper(PychopperConfig { 
-            backend: config::PychopperBackend::MachineLearning
-        })
+        
     ];
 
     // perform the grid test as configured

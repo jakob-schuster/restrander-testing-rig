@@ -7,7 +7,6 @@ pub fn accuracy_timed_run_config(
     specific_config: SpecificProgramConfig,
     paf_reads: &Vec<PafRead>
 ) -> ProgramResult {
-    println!("doing accuracy timed run");
     // get the backend argument string
     let backend_string = match specific_config.clone() {
         SpecificProgramConfig::Restrander(_) => panic!("aaa"),
