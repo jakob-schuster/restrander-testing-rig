@@ -1,8 +1,8 @@
 use seq_io::fastq::{Reader,Record};
-use std::str;
+use std::{str, collections::HashMap};
 
 #[path = "paf.rs"] mod paf;
-use crate::paf::PafRead;
+use crate::paf::{PafRead, PafReads};
 
 #[derive(Debug, Clone)]
 
@@ -13,11 +13,11 @@ pub struct AccuracyResult {
 }
 
 impl AccuracyResult {
-    fn new(result: &AccuracyResultExact) -> AccuracyResult {
+    fn new(result: &AccuracyResultExact, total: i32) -> AccuracyResult {
         AccuracyResult {
-            correct: result.correct as f64 / result.total() as f64,
-            incorrect: result.incorrect as f64 / result.total() as f64,
-            ambiguous: result.ambiguous as f64 / result.total() as f64,
+            correct: result.correct as f64 / total as f64,
+            incorrect: result.incorrect as f64 / total as f64,
+            ambiguous: result.ambiguous as f64 / total as f64,
         }
     }
 
@@ -42,7 +42,9 @@ impl AccuracyResultExact {
     }
 }
 
-pub fn parse (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
+pub fn parse (filename: String, paf_reads: PafReads) -> AccuracyResult {
+
+
     let mut result_exact: AccuracyResultExact = AccuracyResultExact {
         correct: 0, 
         incorrect: 0, 
@@ -51,33 +53,31 @@ pub fn parse (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
 
     let mut reader = Reader::from_path(filename).unwrap();
 
-    let mut i: usize = 0;
+    let size = paf_reads.clone().size();
 
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
         let name = record.id().unwrap().split("|").collect::<Vec<_>>()[0];
         
         // skip non-matching records
-        while name != paf_reads[i].name {
-            i += 1;
-        }
-
+        let strand = paf_reads.clone().get(name.to_string());
         let current = *record.head().last().unwrap();
+        
         if current == 63 {
             result_exact.ambiguous += 1;
-        } else if current == paf_reads[i].strand as u8 {
+        } else if current == strand as u8 {
             result_exact.correct += 1;
         } else {
             result_exact.incorrect += 1;
         }
-        i += 1;
     }
 
-    AccuracyResult::new(&result_exact).to_percent()
+    AccuracyResult::new(&result_exact, size).to_percent()
 }
 
 
-pub fn parse_pychopper (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyResult {
+pub fn parse_pychopper (filename: String, paf_reads: PafReads) -> AccuracyResult {
+    
     let mut result_exact: AccuracyResultExact = AccuracyResultExact {
         correct: 0, 
         incorrect: 0, 
@@ -86,30 +86,26 @@ pub fn parse_pychopper (filename: String, paf_reads: &Vec<PafRead>) -> AccuracyR
 
     let mut reader = Reader::from_path(filename).unwrap();
 
-    let mut i: usize = 0;
+    let size = paf_reads.clone().size();
 
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
         let name = record.id().unwrap().split("|").collect::<Vec<_>>()[1];
         
         // skip non-matching records
-        while name != paf_reads[i].name {
-            i += 1;
-            result_exact.ambiguous += 1;
-        }
-
+        let strand = paf_reads.clone().get(name.to_string());
         let current = *record.head().last().unwrap();
+        
         if current == 63 {
             result_exact.ambiguous += 1;
-        } else if current == paf_reads[i].strand as u8 {
+        } else if current == strand as u8 {
             result_exact.correct += 1;
         } else {
             result_exact.incorrect += 1;
         }
-        i += 1;
     }
 
-    AccuracyResult::new(&result_exact).to_percent()
+    AccuracyResult::new(&result_exact, size).to_percent()
 }
 
 

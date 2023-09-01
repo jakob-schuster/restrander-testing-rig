@@ -1,9 +1,10 @@
+use std::collections::HashMap;
 use std::fs::remove_file;
 use std::process::{Command, Output};
 use std::time::{Duration, Instant};
 
 use crate::json::Config;
-use crate::paf::PafRead;
+use crate::paf::{PafRead, PafReads};
 use crate::{constants, fastq};
 use crate::config::{self, ProgramResult};
 
@@ -19,7 +20,7 @@ pub fn _timed_run(input_filename: &String, output_filename: &String, config_file
     return (output, duration)
 }
 
-pub fn accuracy_timed_run_config(generic_config: config::GenericProgramConfig, specific_config: String, paf_reads: &Vec<PafRead>) -> config::ProgramResult {
+pub fn accuracy_timed_run_config(generic_config: config::GenericProgramConfig, specific_config: String, paf_reads: PafReads) -> config::ProgramResult {
     // run it and time it
     let start = Instant::now();
     Command::new(constants::RESTRANDER_PATH)

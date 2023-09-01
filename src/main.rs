@@ -102,7 +102,7 @@ fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<String>) -> Vec<config:
             config, 
             paf::parse(input.paf.clone())))
         .map(|(generic_config, restrander_config, paf_reads)| 
-            restrander::accuracy_timed_run_config(generic_config, restrander_config, &paf_reads))
+            restrander::accuracy_timed_run_config(generic_config, restrander_config, paf_reads))
         .collect()
 }
 
@@ -111,7 +111,7 @@ fn pychopper_grid_test(inputs: Vec<Input>, configs: Vec<SpecificProgramConfig>) 
     iproduct!(inputs, configs)
         .map(|(input, config)| (config::GenericProgramConfig{input: input.fastq.clone(), output: constants::OUTPUT_FILENAME.to_string()}, config, paf::parse(input.paf.clone())))
         .map(|(generic_config, restrander_config, paf_reads)| 
-            pychopper::accuracy_timed_run_config(generic_config, restrander_config, &paf_reads))
+            pychopper::accuracy_timed_run_config(generic_config, restrander_config, paf_reads))
         .collect()
 }
 

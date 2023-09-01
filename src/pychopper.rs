@@ -1,11 +1,11 @@
-use std::{time::Instant, process::Command, fs::remove_file};
+use std::{time::Instant, process::Command, fs::remove_file, collections::HashMap};
 
-use crate::{config::{GenericProgramConfig, SpecificProgramConfig, ProgramResult, ProgramConfig, PychopperConfig}, constants, fastq, paf::PafRead};
+use crate::{config::{GenericProgramConfig, SpecificProgramConfig, ProgramResult, ProgramConfig, PychopperConfig}, constants, fastq, paf::{PafRead, PafReads}};
 
 pub fn accuracy_timed_run_config(
     generic_config: GenericProgramConfig, 
     specific_config: SpecificProgramConfig,
-    paf_reads: &Vec<PafRead>
+    paf_reads: PafReads
 ) -> ProgramResult {
     // get the backend argument string
     let backend_string = match specific_config.clone() {

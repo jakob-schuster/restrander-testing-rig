@@ -1,10 +1,51 @@
 
+use std::collections::HashMap;
 use std::fs::File;
+use std::hash::Hash;
 use std::io::{BufRead, BufReader};
 
+#[derive(Clone)]
 pub struct PafRead {
     pub name: String,
     pub strand: char,
+}
+
+#[derive(Clone)]
+pub struct PafReads {
+    map: HashMap<String, char>,
+    size: i32
+}
+
+impl PafReads {
+    fn new() -> PafReads {
+        PafReads { map: HashMap::new(), size: 0 }
+    }
+
+    pub fn insert(mut self, read: PafRead) {
+        self.map.insert(read.name, read.strand);
+        self.size += 1;
+    }
+
+    // pub fn insert(paf_reads: PafReads, read: PafRead) -> PafReads {
+    //     let thing = paf_reads.map.extend(
+    //         HashMap::from(paf_reads.map.));
+
+    //     PafReads {
+    //         map: 
+    //         size: paf_reads.size + 1
+    //     }
+    // }
+
+    pub fn get(self, name: String) -> char {
+        match self.map.get(&name) {
+            None => panic!("Name {} not in PAF!", name),
+            Some(strand) => strand.clone()
+        }
+    }
+
+    pub fn size(self) -> i32 {
+        self.size
+    }
 }
 
 impl PafRead {
@@ -46,13 +87,18 @@ impl PafRead {
     }
 }
 
-pub fn parse (filename: String) -> Vec<PafRead> {
+
+
+pub fn parse (filename: String) -> PafReads {
     let paf = BufReader::new(File::open(filename).expect("open failed"));
 
-    let mut reads: Vec<PafRead> = Vec::new();
-    for line in paf.lines() {
-        reads.push(PafRead::from_paf_line(&line.unwrap().as_bytes().to_vec()));
-    }
-
-    return reads;
+    let reads = paf.lines().into_iter()
+        .fold(PafReads::new(), |reads, line| -> PafReads {
+            let read = PafRead::from_paf_line(&line.unwrap().as_bytes().to_vec());
+            let mut map = reads.map.clone();
+            map.insert(read.name, read.strand);
+            PafReads { map, size: reads.size + 1 }
+        });
+    
+    reads
 }
