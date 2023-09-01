@@ -34,7 +34,7 @@ pub fn accuracy_timed_run_config(generic_config: config::GenericProgramConfig, s
     let accuracy = fastq::parse(generic_config.clone().output, paf_reads);
 
     // delete the file if necessary
-    remove_file(generic_config.clone().output).expect("Couldn't delete file!");
+    // remove_file(generic_config.clone().output).expect("Couldn't delete file!");
 
     // combine all this together to build the result
     ProgramResult {

@@ -1,6 +1,6 @@
 use std::{env, fs, process::Command};
 
-use config::{ProgramResult, PychopperConfig, SpecificProgramConfig};
+use config::{ProgramResult, PychopperConfig, SpecificProgramConfig, Protocol};
 use itertools::{iproduct, Itertools};
 
 mod constants;
@@ -16,16 +16,18 @@ fn main() {
     let input = Input::new_from_args();
 
     // make the configs
-    json::make_desired_configs(input.clone().config_dir, config::Protocol::PCB111);
+    json::make_desired_configs(input.clone().config_dir, input.clone().protocol);
 
     // get all the configs from the given config location
     let restrander_configs = get_paths(input.clone().config_dir);
     let pychopper_configs = vec![
-        SpecificProgramConfig::Pychopper(PychopperConfig { 
-            backend: config::PychopperBackend::Edlib 
+        SpecificProgramConfig::Pychopper(PychopperConfig {
+            backend: config::PychopperBackend::Edlib,
+            protocol: input.clone().protocol
         }),
-        SpecificProgramConfig::Pychopper(PychopperConfig { 
-            backend: config::PychopperBackend::MachineLearning
+        SpecificProgramConfig::Pychopper(PychopperConfig {
+            backend: config::PychopperBackend::MachineLearning,
+            protocol: input.clone().protocol
         })
     ];
 
@@ -51,19 +53,20 @@ fn get_paths(config_dir: String) -> Vec<String> {
 struct Input {
     fastq: String,
     paf: String,
-    config_dir: String
+    config_dir: String,
+    protocol: Protocol
 }
 
 impl Input {
     pub fn new_from_args() -> Input {
         let args: Vec<String> = env::args().collect();
 
-        assert!(args.len() == 4);
-        Input { fastq: args[1].clone(), paf: args[2].clone(), config_dir: args[3].clone() }
+        assert!(args.len() == 5);
+        Input { fastq: args[1].clone(), paf: args[2].clone(), config_dir: args[3].clone(), protocol: Protocol::new(args[4].clone().as_str()) }
     }
 
-    pub fn _new(fastq: String, paf: String, config_dir: String) -> Input {
-        Input {fastq, paf, config_dir}
+    pub fn _new(fastq: String, paf: String, config_dir: String, protocol: Protocol) -> Input {
+        Input { fastq, paf, config_dir, protocol }
     }
 }
 

@@ -10,9 +10,17 @@ pub fn accuracy_timed_run_config(
     // get the backend argument string
     let backend_string = match specific_config.clone() {
         SpecificProgramConfig::Restrander(_) => panic!("aaa"),
-        SpecificProgramConfig::Pychopper(PychopperConfig { backend }) => match backend {
+        SpecificProgramConfig::Pychopper(PychopperConfig { backend, protocol: _ } ) => match backend {
             crate::config::PychopperBackend::MachineLearning => "phmm",
             crate::config::PychopperBackend::Edlib => "edlib"
+        }
+    };
+
+    let protocol_string = match specific_config.clone() {
+        SpecificProgramConfig::Restrander(_) => panic!("wrong config provided!"),
+        SpecificProgramConfig::Pychopper(PychopperConfig { backend: _, protocol }) => match protocol {
+            crate::config::Protocol::PCB109 => "PCS109",
+            crate::config::Protocol::PCB111 => "PCS111"
         }
     };
 
@@ -23,13 +31,14 @@ pub fn accuracy_timed_run_config(
             .arg("run")
             .arg("pychopper")
             .args(&["-m", backend_string])
-            .args(&["-k", "PCS111"])
+            .args(&["-k", protocol_string])
             .arg(generic_config.clone().input)
             .arg(generic_config.clone().output)
     // Command::new(Con)
             .spawn()
             .expect("pychopper failed to start")
-            .wait();
+            .wait()
+            .expect("pychopper failed to terminate");
     let duration = start.elapsed().as_secs();
 
     // determine the accuracy

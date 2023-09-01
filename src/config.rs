@@ -1,4 +1,5 @@
 use crate::{fastq::AccuracyResult, json::{Config, Method}};
+use core::panic;
 use std::fmt;
 
 #[derive(Debug, Clone)]
@@ -54,6 +55,7 @@ impl fmt::Display for SpecificProgramConfig {
 #[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub struct PychopperConfig {
     pub backend: PychopperBackend,
+    pub protocol: Protocol
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -67,10 +69,20 @@ pub enum PipelineStep {
     Primer(Protocol),
 }
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Hash)]
 pub enum Protocol {
     PCB109,
     PCB111,
+}
+
+impl Protocol {
+    pub fn new(string: &str) -> Protocol {
+        match string {
+            "PCB109" => Protocol::PCB109,
+            "PCB111" => Protocol::PCB111,
+            _ => panic!("Bad protocol string argument!")
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Hash, PartialOrd)]
