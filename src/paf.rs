@@ -87,8 +87,6 @@ impl PafRead {
     }
 }
 
-
-
 pub fn parse (filename: String) -> PafReads {
     let paf = BufReader::new(File::open(filename).expect("open failed"));
 

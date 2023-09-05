@@ -16,7 +16,7 @@ fn main() {
     let input = Input::new_from_args();
 
     // make the configs
-    json::make_desired_configs(input.clone().config_dir, input.clone().protocol);
+    // json::make_desired_configs(input.clone().config_dir, input.clone().protocol);
 
     // get all the configs from the given config location
     let restrander_configs = get_paths(input.clone().config_dir);
