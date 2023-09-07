@@ -42,9 +42,10 @@ impl AccuracyResultExact {
     }
 }
 
-pub fn parse (filename: String, paf_reads: PafReads) -> AccuracyResult {
+pub fn parse (filename: String, mut paf_reads: PafReads) -> AccuracyResult {
 
 
+    let size = paf_reads.size;
     let mut result_exact: AccuracyResultExact = AccuracyResultExact {
         correct: 0, 
         incorrect: 0, 
@@ -53,14 +54,14 @@ pub fn parse (filename: String, paf_reads: PafReads) -> AccuracyResult {
 
     let mut reader = Reader::from_path(filename).unwrap();
 
-    let size = paf_reads.clone().size();
+    // let size = paf_reads.clone().size();
 
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
         let name = record.id().unwrap().split("|").collect::<Vec<_>>()[0];
         
         // skip non-matching records
-        let strand = paf_reads.clone().get(name.to_string());
+        let strand = paf_reads.map.get(&name.to_string()).expect("Failed to read!").to_owned();
         let current = *record.head().last().unwrap();
         
         if current == 63 {

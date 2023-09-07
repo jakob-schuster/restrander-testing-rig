@@ -13,7 +13,7 @@ pub struct PafRead {
 #[derive(Clone)]
 pub struct PafReads {
     pub map: HashMap<String, char>,
-    size: i32
+    pub size: i32
 }
 
 impl PafReads {
