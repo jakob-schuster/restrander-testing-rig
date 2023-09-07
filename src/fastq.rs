@@ -1,5 +1,5 @@
 use seq_io::fastq::{Reader,Record};
-use std::{str, collections::HashMap};
+use std::{str, collections::{HashMap, HashSet}};
 
 #[path = "paf.rs"] mod paf;
 use crate::paf::{PafRead, PafReads};
@@ -108,6 +108,63 @@ pub fn parse_pychopper (filename: String, paf_reads: PafReads) -> AccuracyResult
     AccuracyResult::new(&result_exact, size).to_percent()
 }
 
+pub struct CategorisedReads {
+    pub correct: HashSet<String>,
+    pub incorrect: HashSet<String>,
+    pub ambiguous: HashSet<String>
+}
+
+impl CategorisedReads {
+    fn new() -> CategorisedReads {
+        CategorisedReads {
+            correct: HashSet::new(),
+            incorrect: HashSet::new(),
+            ambiguous: HashSet::new()
+        }
+    }
+}
+
+pub fn parse_categorise (filename: String, paf_reads: PafReads, is_pychopper: bool) -> CategorisedReads {
+    let mut reader = Reader::from_path(filename).unwrap();
+
+    let mut fastq_reads: HashMap<String, char> = HashMap::new();
+    while let Some(record) = reader.next() {
+        let record = record.expect("Error reading record");
+        let name = if is_pychopper {
+            record.id().unwrap().split("|").collect::<Vec<_>>()[1]
+        } else {
+            // restrander it goes to the 0 spot
+            record.id().unwrap().split("|").collect::<Vec<_>>()[0]
+        };
+        
+        // skip non-matching records
+        let current = *record.head().last().unwrap();
+
+        fastq_reads.insert(name.to_string(), current.clone() as char);
+    }
+
+    let mut reads = CategorisedReads::new();
+    for paf_key in paf_reads.map.keys() {
+        for fastq_key in fastq_reads.keys() {
+            // skip ambiguous entries
+            if !fastq_reads.contains_key(paf_key) {
+                reads.ambiguous.insert(paf_key.clone());
+                continue;
+            }
+
+            // categorise!
+            if fastq_reads.contains_key(paf_key) {
+                if *paf_reads.map.get(&paf_key.clone()).expect("Paf map didn't have key") == *fastq_reads.get(&fastq_key.clone()).expect("Fastq map didn't have key") {
+                    reads.correct.insert(paf_key.clone());
+                } else {
+                    reads.incorrect.insert(paf_key.clone());
+                }
+            }
+        }
+    }
+
+    reads
+}
 
 pub fn parse_nanoprep (filename: String, paf_reads: &Vec<PafRead>) {
 

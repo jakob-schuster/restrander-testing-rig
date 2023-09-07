@@ -58,3 +58,38 @@ pub fn accuracy_timed_run_config(
         accuracy
     }
 }
+
+pub fn run(
+    generic_config: GenericProgramConfig, 
+    specific_config: SpecificProgramConfig,
+    paf_reads: PafReads
+) {
+    // get the backend argument string
+    let backend_string = match specific_config.clone() {
+        SpecificProgramConfig::Restrander(_) => panic!("aaa"),
+        SpecificProgramConfig::Pychopper(PychopperConfig { backend, protocol: _ } ) => match backend {
+            crate::config::PychopperBackend::MachineLearning => "phmm",
+            crate::config::PychopperBackend::Edlib => "edlib"
+        }
+    };
+
+    let protocol_string = match specific_config.clone() {
+        SpecificProgramConfig::Restrander(_) => panic!("wrong config provided!"),
+        SpecificProgramConfig::Pychopper(PychopperConfig { backend: _, protocol }) => match protocol {
+            crate::config::Protocol::PCB109 => "PCS109",
+            crate::config::Protocol::PCB111 => "PCS111"
+        }
+    };
+
+    Command::new(constants::CONDA_PATH)
+            .arg("run")
+            .arg("pychopper")
+            .args(&["-m", backend_string])
+            .args(&["-k", protocol_string])
+            .arg(generic_config.clone().input)
+            .arg(generic_config.clone().output)
+            .spawn()
+            .expect("pychopper failed to start")
+            .wait()
+            .expect("pychopper failed to terminate");
+}

@@ -12,7 +12,7 @@ pub struct PafRead {
 
 #[derive(Clone)]
 pub struct PafReads {
-    map: HashMap<String, char>,
+    pub map: HashMap<String, char>,
     size: i32
 }
 
@@ -89,14 +89,22 @@ impl PafRead {
 
 pub fn parse (filename: String) -> PafReads {
     let paf = BufReader::new(File::open(filename).expect("open failed"));
+    let mut reads = PafReads::new();
 
-    let reads = paf.lines().into_iter()
-        .fold(PafReads::new(), |reads, line| -> PafReads {
-            let read = PafRead::from_paf_line(&line.unwrap().as_bytes().to_vec());
-            let mut map = reads.map.clone();
-            map.insert(read.name, read.strand);
-            PafReads { map, size: reads.size + 1 }
-        });
+    for line in paf.lines() {
+        let read = PafRead::from_paf_line(&line.unwrap().as_bytes().to_vec());
+        reads.map.entry(read.name).or_insert(0 as char);
+    }
+
+    // let reads = paf.lines().into_iter()
+    //     .fold(PafReads::new(), |reads, line| -> PafReads {
+    //         let read = PafRead::from_paf_line(&line.unwrap().as_bytes().to_vec());
+    //         let mut map = reads.map.clone();
+            
+    //         reads.map.entry()
+    //         map.insert(read.name, read.strand);
+    //         PafReads { map, size: reads.size + 1 }
+    //     });
     
     reads
 }

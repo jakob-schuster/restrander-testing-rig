@@ -1,7 +1,8 @@
-use std::{env, fs, process::Command};
+use std::{env, fs, process::Command, collections::HashSet};
 
-use config::{ProgramResult, PychopperConfig, SpecificProgramConfig, Protocol};
+use config::{ProgramResult, PychopperConfig, SpecificProgramConfig, Protocol, GenericProgramConfig};
 use itertools::{iproduct, Itertools};
+use paf::PafReads;
 
 mod constants;
 mod json;
@@ -10,6 +11,60 @@ mod pychopper;
 mod paf;
 mod fastq;
 mod config;
+
+fn not_main() {
+    // collect the input filenames from the command line args
+    let input = Input::new_from_args();
+
+    // let restrander_config = get_paths(input.clone().config_dir)
+    //     .first()
+    //     .expect("No restrander config in that directory!");
+
+    let restrander_config = "../config/error-rate-0.35.json".to_string();
+    
+    let pychopper_config = SpecificProgramConfig::Pychopper(PychopperConfig {
+        backend: config::PychopperBackend::Edlib, 
+        protocol: input.clone().protocol
+    });
+
+    let paf_reads = paf::parse(input.paf);
+
+    compare(input.fastq, restrander_config, pychopper_config, paf_reads);
+
+    println!("done");
+}
+
+fn compare(
+    input_fastq: String, 
+    restrander_config: String, 
+    pychopper_config: SpecificProgramConfig, 
+    paf_reads: PafReads
+) {
+    let output_fastq = "temp.fq".to_string();
+    restrander::_run(&input_fastq, &output_fastq, &restrander_config);
+    let restrander_categorised_reads = fastq::parse_categorise(
+        output_fastq.clone(),
+        paf_reads.clone(),
+        false
+    );
+
+    pychopper::run(
+        GenericProgramConfig { 
+            input: input_fastq, 
+            output: output_fastq.clone() 
+        },
+         pychopper_config, paf_reads.clone());
+    let pychopper_categorised_reads = fastq::parse_categorise(
+        output_fastq.clone(), 
+        paf_reads.clone(), 
+        true
+    );
+
+    let correct_intersection: HashSet<&String> = restrander_categorised_reads.correct
+        .intersection(&pychopper_categorised_reads.correct).collect();
+    let correct_difference: HashSet<&String> = restrander_categorised_reads.correct
+        .difference(&pychopper_categorised_reads.correct).collect();
+}
 
 fn main() {
     // collect the input filenames from the command line args
