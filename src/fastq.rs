@@ -42,7 +42,7 @@ impl AccuracyResultExact {
     }
 }
 
-pub fn parse (filename: String, paf_reads: PafReads) -> AccuracyResult {
+pub fn parse (filename: String, paf_reads: PafReads, is_pychopper: bool) -> AccuracyResult {
 
 
     let size = paf_reads.size;
@@ -58,7 +58,13 @@ pub fn parse (filename: String, paf_reads: PafReads) -> AccuracyResult {
 
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
-        let name = record.id().unwrap().split("|").collect::<Vec<_>>()[0];
+        
+        // get the name differently depending on whether this is pychopper
+        let name = if is_pychopper {
+            record.id().unwrap().split("|").collect::<Vec<_>>()[1]
+        } else {
+            record.id().unwrap().split("|").collect::<Vec<_>>()[0]
+        };
         
         // skip non-matching records
         let strand = paf_reads.map.get(&name.to_string()).expect("Failed to read!").to_owned();
@@ -72,6 +78,8 @@ pub fn parse (filename: String, paf_reads: PafReads) -> AccuracyResult {
             result_exact.incorrect += 1;
         }
     }
+
+    result_exact.ambiguous = size as u64 - (result_exact.correct + result_exact.incorrect);
 
     AccuracyResult::new(&result_exact, size).to_percent()
 }

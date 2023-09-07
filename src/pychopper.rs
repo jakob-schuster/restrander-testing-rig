@@ -42,7 +42,7 @@ pub fn accuracy_timed_run_config(
     let duration = start.elapsed().as_secs();
 
     // determine the accuracy
-    let accuracy = fastq::parse_pychopper(generic_config.clone().output, paf_reads);
+    let accuracy = fastq::parse(generic_config.clone().output, paf_reads, true);
 
     // delete the file if necessary
     // remove_file(generic_config.clone().output)
