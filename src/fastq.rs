@@ -42,7 +42,7 @@ impl AccuracyResultExact {
     }
 }
 
-pub fn parse (filename: String, mut paf_reads: PafReads) -> AccuracyResult {
+pub fn parse (filename: String, paf_reads: PafReads) -> AccuracyResult {
 
 
     let size = paf_reads.size;
@@ -62,11 +62,11 @@ pub fn parse (filename: String, mut paf_reads: PafReads) -> AccuracyResult {
         
         // skip non-matching records
         let strand = paf_reads.map.get(&name.to_string()).expect("Failed to read!").to_owned();
-        let current = *record.head().last().unwrap();
+        let current = *record.head().last().unwrap() as char;
         
-        if current == 63 {
+        if current == '?' {
             result_exact.ambiguous += 1;
-        } else if current == strand as u8 {
+        } else if current == strand {
             result_exact.correct += 1;
         } else {
             result_exact.incorrect += 1;

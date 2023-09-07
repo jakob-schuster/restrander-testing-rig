@@ -93,7 +93,8 @@ pub fn parse (filename: String) -> PafReads {
 
     for line in paf.lines() {
         let read = PafRead::from_paf_line(&line.unwrap().as_bytes().to_vec());
-        reads.map.entry(read.name).or_insert(0 as char);
+        reads.map.entry(read.name).or_insert(read.strand);
+        reads.size += 1;
     }
 
     // let reads = paf.lines().into_iter()
