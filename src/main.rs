@@ -109,6 +109,7 @@ struct Input {
     fastq: String,
     paf: String,
     config_dir: String,
+    temp_fastq: String,
     protocol: Protocol
 }
 
@@ -116,12 +117,14 @@ impl Input {
     pub fn new_from_args() -> Input {
         let args: Vec<String> = env::args().collect();
 
-        assert!(args.len() == 5);
-        Input { fastq: args[1].clone(), paf: args[2].clone(), config_dir: args[3].clone(), protocol: Protocol::new(args[4].clone().as_str()) }
-    }
-
-    pub fn _new(fastq: String, paf: String, config_dir: String, protocol: Protocol) -> Input {
-        Input { fastq, paf, config_dir, protocol }
+        assert!(args.len() == 6);
+        Input { 
+            fastq: args[1].clone(), 
+            paf: args[2].clone(), 
+            config_dir: args[3].clone(), 
+            temp_fastq: args[4].clone(),
+            protocol: Protocol::new(args[5].clone().as_str()) 
+        }
     }
 }
 
@@ -152,7 +155,7 @@ fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<String>) -> Vec<config:
         .map(|(input, config)| (
             config::GenericProgramConfig{
                 input: input.fastq.clone(), 
-                output: constants::OUTPUT_FILENAME.to_string()
+                output: input.temp_fastq.to_string()
             }, 
             config, 
             paf::parse(input.paf.clone())))
@@ -164,7 +167,11 @@ fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<String>) -> Vec<config:
 fn pychopper_grid_test(inputs: Vec<Input>, configs: Vec<SpecificProgramConfig>) -> Vec<config::ProgramResult> {
     // run pychopper on the product of inputs and configs
     iproduct!(inputs, configs)
-        .map(|(input, config)| (config::GenericProgramConfig{input: input.fastq.clone(), output: constants::OUTPUT_FILENAME.to_string()}, config, paf::parse(input.paf.clone())))
+        .map(|(input, config)| (
+            config::GenericProgramConfig { 
+                input: input.fastq.clone(), 
+                output: input.temp_fastq.clone()
+            }, config, paf::parse(input.paf.clone())))
         .map(|(generic_config, restrander_config, paf_reads)| 
             pychopper::accuracy_timed_run_config(generic_config, restrander_config, paf_reads))
         .collect()
