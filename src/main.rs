@@ -71,19 +71,19 @@ fn main() {
     let input = Input::new_from_args();
 
     // make the configs
-    // json::make_desired_configs(input.clone().config_dir, input.clone().protocol);
+    json::make_desired_configs(input.clone().config_dir, input.clone().protocol);
 
     // get all the configs from the given config location
     let restrander_configs = get_paths(input.clone().config_dir);
     let pychopper_configs = vec![
-        SpecificProgramConfig::Pychopper(PychopperConfig {
-            backend: config::PychopperBackend::Edlib,
-            protocol: input.clone().protocol
-        }),
-        SpecificProgramConfig::Pychopper(PychopperConfig {
-            backend: config::PychopperBackend::MachineLearning,
-            protocol: input.clone().protocol
-        })
+        // SpecificProgramConfig::Pychopper(PychopperConfig {
+        //     backend: config::PychopperBackend::Edlib,
+        //     protocol: input.clone().protocol
+        // }),
+        // SpecificProgramConfig::Pychopper(PychopperConfig {
+        //     backend: config::PychopperBackend::MachineLearning,
+        //     protocol: input.clone().protocol
+        // })
     ];
 
     // perform the grid test as configured

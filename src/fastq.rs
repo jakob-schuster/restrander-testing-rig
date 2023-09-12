@@ -84,39 +84,6 @@ pub fn parse (filename: String, paf_reads: PafReads, is_pychopper: bool) -> Accu
     AccuracyResult::new(&result_exact, size).to_percent()
 }
 
-
-pub fn parse_pychopper (filename: String, paf_reads: PafReads) -> AccuracyResult {
-    
-    let mut result_exact: AccuracyResultExact = AccuracyResultExact {
-        correct: 0, 
-        incorrect: 0, 
-        ambiguous: 0,
-    };
-
-    let mut reader = Reader::from_path(filename).unwrap();
-
-    let size = paf_reads.clone().size();
-
-    while let Some(record) = reader.next() {
-        let record = record.expect("Error reading record");
-        let name = record.id().unwrap().split("|").collect::<Vec<_>>()[1];
-        
-        // skip non-matching records
-        let strand = paf_reads.clone().get(name.to_string());
-        let current = *record.head().last().unwrap();
-        
-        if current == 63 {
-            result_exact.ambiguous += 1;
-        } else if current == strand as u8 {
-            result_exact.correct += 1;
-        } else {
-            result_exact.incorrect += 1;
-        }
-    }
-
-    AccuracyResult::new(&result_exact, size).to_percent()
-}
-
 pub struct CategorisedReads {
     pub correct: HashSet<String>,
     pub incorrect: HashSet<String>,

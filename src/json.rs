@@ -15,7 +15,7 @@ pub struct Config {
 }
 
 impl Config {
-    const DEFAULT_ERROR_RATE: f64 = 0.35;
+    const DEFAULT_ERROR_RATE: f64 = 0.25;
     const DEFAULT_EXCLUDE_UNKNOWNS: bool = false;
 
     fn default_pipeline() -> Pipeline {
@@ -29,7 +29,7 @@ impl Config {
         Config {
             pipeline: Config::default_pipeline(),
             exclude_unknowns: false,
-            error_rate: 0.35
+            error_rate: 0.25
         }
     }
 
@@ -162,8 +162,8 @@ fn make_no_primer_config() -> Config {
         pipeline: vec![
             Method::default_poly()
         ],
-        exclude_unknowns: false,
-        error_rate: 0.35
+        exclude_unknowns: Config::DEFAULT_EXCLUDE_UNKNOWNS,
+        error_rate: Config::DEFAULT_ERROR_RATE
     }
 }
 
@@ -172,7 +172,7 @@ fn make_no_poly_config(protocol: Protocol) -> Config {
         pipeline: vec![
             Method::Primer(protocol)
         ],
-        exclude_unknowns: false,
-        error_rate: 0.35
+        exclude_unknowns: Config::DEFAULT_EXCLUDE_UNKNOWNS,
+        error_rate: Config::DEFAULT_ERROR_RATE
     }
 }
