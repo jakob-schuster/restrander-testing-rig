@@ -18,16 +18,16 @@ impl Config {
     const DEFAULT_ERROR_RATE: f64 = 0.25;
     const DEFAULT_EXCLUDE_UNKNOWNS: bool = false;
 
-    fn default_pipeline() -> Pipeline {
+    fn default_pipeline(protocol: Protocol) -> Pipeline {
         vec![
             Method::default_poly(),
-            Method::default_primer()
+            Method::Primer(protocol)
         ]
     }
 
     fn default_config() -> Config {
         Config {
-            pipeline: Config::default_pipeline(),
+            pipeline: Config::default_pipeline(Protocol::PCB109),
             exclude_unknowns: false,
             error_rate: 0.25
         }
@@ -109,12 +109,12 @@ impl Method {
 pub fn make_desired_configs(config_dir: String, protocol: Protocol) {
     // make error rate configs
     let error_rates = vec![0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8].into_iter()
-        .map(|error_rate| {(format!("error-rate-{}.json", error_rate), make_error_rate_config(error_rate))});
+        .map(|error_rate| {(format!("error-rate-{}.json", error_rate), make_error_rate_config(error_rate, protocol.clone()))});
     // make search size configs
     let search_sizes = vec![200, 400, 1000, 10000].into_iter()
-        .map(|search_size| {(format!("search-size-{}.json", search_size), make_search_size_config(search_size))});
+        .map(|search_size| {(format!("search-size-{}.json", search_size), make_search_size_config(search_size, protocol.clone()))});
     // make no poly test
-    let no_poly = (format!("no-poly.json"), make_no_poly_config(protocol));
+    let no_poly = (format!("no-poly.json"), make_no_poly_config(protocol.clone()));
     
     // make no primer test
     let no_primer = (format!("no-primer.json"), make_no_primer_config());
@@ -138,19 +138,27 @@ fn save_config(path: String, config: Config) -> String {
     path
 }
 
-fn make_error_rate_config(error_rate: f64) -> Config {
+fn make_error_rate_config(error_rate: f64, protocol: Protocol) -> Config {
     Config { 
-        pipeline: Config::default_pipeline(), 
+        pipeline: Config::default_pipeline(protocol), 
         exclude_unknowns: Config::DEFAULT_EXCLUDE_UNKNOWNS, 
-        error_rate 
+        error_rate
     }
 }
 
-fn make_search_size_config(search_size: u64) -> Config {
+fn make_error_rate_config_no_poly(error_rate: f64, protocol: Protocol) -> Config {
+    Config { 
+        pipeline: vec![Method::Primer(protocol)], 
+        exclude_unknowns: Config::DEFAULT_EXCLUDE_UNKNOWNS, 
+        error_rate
+    }
+}
+
+fn make_search_size_config(search_size: u64, protocol: Protocol) -> Config {
     Config { 
         pipeline: vec![
             Method::Poly(10, search_size),
-            Method::default_primer()
+            Method::Primer(protocol)
         ], 
         exclude_unknowns: Config::DEFAULT_EXCLUDE_UNKNOWNS, 
         error_rate: Config::DEFAULT_ERROR_RATE

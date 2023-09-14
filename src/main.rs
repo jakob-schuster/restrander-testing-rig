@@ -20,7 +20,7 @@ fn not_main() {
     //     .first()
     //     .expect("No restrander config in that directory!");
 
-    let restrander_config = "../config/error-rate-0.35.json".to_string();
+    let restrander_config = "../configs/pcb109/error-rate-0.25.json".to_string();
     
     let pychopper_config = SpecificProgramConfig::Pychopper(PychopperConfig {
         backend: config::PychopperBackend::Edlib, 
@@ -40,7 +40,7 @@ fn compare(
     pychopper_config: SpecificProgramConfig, 
     paf_reads: PafReads
 ) {
-    let output_fastq = "temp.fq".to_string();
+    let output_fastq = "../temp.fq".to_string();
     restrander::_run(&input_fastq, &output_fastq, &restrander_config);
     let restrander_categorised_reads = fastq::parse_categorise(
         output_fastq.clone(),
@@ -76,14 +76,14 @@ fn main() {
     // get all the configs from the given config location
     let restrander_configs = get_paths(input.clone().config_dir);
     let pychopper_configs = vec![
-        // SpecificProgramConfig::Pychopper(PychopperConfig {
-        //     backend: config::PychopperBackend::Edlib,
-        //     protocol: input.clone().protocol
-        // }),
-        // SpecificProgramConfig::Pychopper(PychopperConfig {
-        //     backend: config::PychopperBackend::MachineLearning,
-        //     protocol: input.clone().protocol
-        // })
+        SpecificProgramConfig::Pychopper(PychopperConfig {
+            backend: config::PychopperBackend::Edlib,
+            protocol: input.clone().protocol
+        }),
+        SpecificProgramConfig::Pychopper(PychopperConfig {
+            backend: config::PychopperBackend::MachineLearning,
+            protocol: input.clone().protocol
+        })
     ];
 
     // perform the grid test as configured
