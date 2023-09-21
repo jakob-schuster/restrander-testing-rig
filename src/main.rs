@@ -1,8 +1,11 @@
-use std::{env, fs, process::Command, collections::HashSet};
+use core::panic;
+use std::{env, fs, process::Command, collections::HashSet, hash::Hash};
 
 use config::{ProgramResult, PychopperConfig, SpecificProgramConfig, Protocol, GenericProgramConfig};
 use itertools::{iproduct, Itertools};
 use paf::PafReads;
+
+use crate::fastq::CategorisedReads;
 
 mod constants;
 mod json;
@@ -11,67 +14,82 @@ mod pychopper;
 mod paf;
 mod fastq;
 mod config;
+mod comparison;
 
-fn not_main() {
-    // collect the input filenames from the command line args
-    let input = Input::new_from_args();
-
-    // let restrander_config = get_paths(input.clone().config_dir)
-    //     .first()
-    //     .expect("No restrander config in that directory!");
-
-    let restrander_config = "../configs/pcb109/error-rate-0.25.json".to_string();
-    
-    let pychopper_config = SpecificProgramConfig::Pychopper(PychopperConfig {
-        backend: config::PychopperBackend::Edlib, 
-        protocol: input.clone().protocol
-    });
-
-    let paf_reads = paf::parse(input.paf);
-
-    compare(input.fastq, restrander_config, pychopper_config, paf_reads);
-
-    println!("done");
+enum ProgramInput {
+    GridTest {
+        fastq: String,
+        paf: String,
+        config_dir: String,
+        temp_fastq: String,
+        protocol: Protocol
+    },
+    CompareReads {
+        fastq: String,
+        paf: String,
+        restrander_config: String,
+        temp_fastq: String,
+        output_directory: String,
+        protocol: Protocol
+    }
 }
 
-fn compare(
-    input_fastq: String, 
-    restrander_config: String, 
-    pychopper_config: SpecificProgramConfig, 
-    paf_reads: PafReads
-) {
-    let output_fastq = "../temp.fq".to_string();
-    restrander::_run(&input_fastq, &output_fastq, &restrander_config);
-    let restrander_categorised_reads = fastq::parse_categorise(
-        output_fastq.clone(),
-        paf_reads.clone(),
-        false
-    );
+impl ProgramInput {
+    fn new_from_args() -> ProgramInput {
+        let args: Vec<String> = env::args().collect();
 
-    pychopper::run(
-        GenericProgramConfig { 
-            input: input_fastq, 
-            output: output_fastq.clone() 
-        },
-         pychopper_config, paf_reads.clone());
-    let pychopper_categorised_reads = fastq::parse_categorise(
-        output_fastq.clone(), 
-        paf_reads.clone(), 
-        true
-    );
-
-    let correct_intersection: HashSet<&String> = restrander_categorised_reads.correct
-        .intersection(&pychopper_categorised_reads.correct).collect();
-    let correct_difference: HashSet<&String> = restrander_categorised_reads.correct
-        .difference(&pychopper_categorised_reads.correct).collect();
+        if args.len() < 1 {
+            panic!("No argument given!")
+        }
+        
+        match args[1].trim() {
+            "grid" => ProgramInput::GridTest {
+                fastq: args[2].clone(),
+                paf: args[3].clone(), 
+                config_dir: args[4].clone(), 
+                temp_fastq: args[5].clone(),
+                protocol: Protocol::new(args[6].clone().as_str()) 
+            },
+            "compare" => ProgramInput::CompareReads {
+                fastq: args[2].clone(),
+                paf: args[3].clone(), 
+                restrander_config: args[4].clone(),
+                temp_fastq: args[5].clone(),
+                output_directory: args[6].clone(),
+                protocol: Protocol::new(args[7].clone().as_str()) 
+            },
+            _ => panic!("Invalid first argument: {}", args[1])
+        }
+    }
 }
 
 fn main() {
-    // collect the input filenames from the command line args
-    let input = Input::new_from_args();
+    // load the generic input
+    let input = ProgramInput::new_from_args();
 
+    // send the program down the appropriate branch
+    match input {
+        ProgramInput::GridTest { fastq, paf, config_dir, temp_fastq, protocol } =>
+            grid_test(GridTestInput { fastq, paf, config_dir, temp_fastq, protocol }),
+        ProgramInput::CompareReads { fastq, paf, restrander_config, temp_fastq, output_directory, protocol } =>
+            compare(fastq, paf, restrander_config, temp_fastq, output_directory, protocol),
+    }
+}
+
+fn compare(fastq: String, paf: String, restrander_config: String, temp_fastq: String, output_directory: String, protocol: Protocol) {
+    let pychopper_config = SpecificProgramConfig::Pychopper(PychopperConfig {
+        backend: config::PychopperBackend::Edlib, 
+        protocol: protocol
+    });
+
+    let paf_reads = paf::parse(paf);
+
+    comparison::compare(fastq, restrander_config, pychopper_config, paf_reads, temp_fastq, output_directory);
+}
+
+fn grid_test(input: GridTestInput) {
     // make the configs
-    json::make_desired_configs(input.clone().config_dir, input.clone().protocol);
+    json::pcb111_protocol_testing(input.clone().config_dir, input.clone().protocol);
 
     // get all the configs from the given config location
     let restrander_configs = get_paths(input.clone().config_dir);
@@ -105,7 +123,7 @@ fn get_paths(config_dir: String) -> Vec<String> {
 }
 
 #[derive(Clone)]
-struct Input {
+struct GridTestInput {
     fastq: String,
     paf: String,
     config_dir: String,
@@ -113,12 +131,12 @@ struct Input {
     protocol: Protocol
 }
 
-impl Input {
-    pub fn new_from_args() -> Input {
+impl GridTestInput {
+    pub fn new_from_args() -> GridTestInput {
         let args: Vec<String> = env::args().collect();
 
         assert!(args.len() == 6);
-        Input { 
+        GridTestInput { 
             fastq: args[1].clone(), 
             paf: args[2].clone(), 
             config_dir: args[3].clone(), 
@@ -149,7 +167,7 @@ fn _generate_error_rates(max: f64, step: i32) -> Vec<f64> {
 //         .collect()
 // }
 
-fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<String>) -> Vec<config::ProgramResult> {
+fn restrander_grid_test(inputs: Vec<GridTestInput>, configs: Vec<String>) -> Vec<config::ProgramResult> {
     // run restrander on the product of inputs and configs
     iproduct!(inputs, configs)
         .map(|(input, config)| (
@@ -164,7 +182,7 @@ fn restrander_grid_test(inputs: Vec<Input>, configs: Vec<String>) -> Vec<config:
         .collect()
 }
 
-fn pychopper_grid_test(inputs: Vec<Input>, configs: Vec<SpecificProgramConfig>) -> Vec<config::ProgramResult> {
+fn pychopper_grid_test(inputs: Vec<GridTestInput>, configs: Vec<SpecificProgramConfig>) -> Vec<config::ProgramResult> {
     // run pychopper on the product of inputs and configs
     iproduct!(inputs, configs)
         .map(|(input, config)| (

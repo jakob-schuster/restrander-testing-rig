@@ -127,6 +127,17 @@ pub fn make_desired_configs(config_dir: String, protocol: Protocol) {
         .collect_vec();
 }
 
+pub fn pcb111_protocol_testing(config_dir: String, protocol: Protocol) {
+    // make error rate configs
+    let error_rates = vec![0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8].into_iter()
+        .map(|error_rate| {(format!("error-rate-{}.json", error_rate), make_error_rate_config_no_poly(error_rate, protocol.clone()))});
+
+    // save all the files and collect them
+    error_rates
+        .map(|(path, config)| save_config(format!("{}/{}", config_dir, path), config))
+        .collect_vec();
+}
+
 fn save_config(path: String, config: Config) -> String {
     // make the file
     File::create(path.clone())

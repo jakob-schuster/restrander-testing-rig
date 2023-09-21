@@ -84,6 +84,7 @@ pub fn parse (filename: String, paf_reads: PafReads, is_pychopper: bool) -> Accu
     AccuracyResult::new(&result_exact, size).to_percent()
 }
 
+#[derive(Clone)]
 pub struct CategorisedReads {
     pub correct: HashSet<String>,
     pub incorrect: HashSet<String>,
@@ -121,20 +122,18 @@ pub fn parse_categorise (filename: String, paf_reads: PafReads, is_pychopper: bo
 
     let mut reads = CategorisedReads::new();
     for paf_key in paf_reads.map.keys() {
-        for fastq_key in fastq_reads.keys() {
-            // skip ambiguous entries
-            if !fastq_reads.contains_key(paf_key) {
-                reads.ambiguous.insert(paf_key.clone());
-                continue;
-            }
+        // skip ambiguous entries
+        if !fastq_reads.contains_key(paf_key) {
+            reads.ambiguous.insert(paf_key.clone());
+            continue;
+        }
 
-            // categorise!
-            if fastq_reads.contains_key(paf_key) {
-                if *paf_reads.map.get(&paf_key.clone()).expect("Paf map didn't have key") == *fastq_reads.get(&fastq_key.clone()).expect("Fastq map didn't have key") {
-                    reads.correct.insert(paf_key.clone());
-                } else {
-                    reads.incorrect.insert(paf_key.clone());
-                }
+        // categorise!
+        if fastq_reads.contains_key(paf_key) {
+            if *paf_reads.map.get(&paf_key.clone()).expect("Paf map didn't have key") == *fastq_reads.get(&paf_key.clone()).expect("Fastq map didn't have key") {
+                reads.correct.insert(paf_key.clone());
+            } else {
+                reads.incorrect.insert(paf_key.clone());
             }
         }
     }
