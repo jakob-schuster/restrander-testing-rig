@@ -1,9 +1,10 @@
 use core::panic;
 use std::{env, fs, process::Command, collections::HashSet, hash::Hash};
 
-use config::{ProgramResult, PychopperConfig, SpecificProgramConfig, Protocol, GenericProgramConfig};
+use config::{ProgramResult, PychopperConfig, SpecificProgramConfig, Protocol, GenericProgramConfig, RestranderConfig};
 use itertools::{iproduct, Itertools};
 use paf::PafReads;
+use restrander::accuracy_timed_run_config;
 
 use crate::fastq::CategorisedReads;
 
@@ -31,6 +32,17 @@ enum ProgramInput {
         temp_fastq: String,
         output_directory: String,
         protocol: Protocol
+    },
+    Standard {
+        fastq: String,
+        paf: String,
+        restrander_config: String,
+        temp_fastq: String,
+        protocol: Protocol
+    },
+    Quick {
+        fastq: String,
+        paf: String
     }
 }
 
@@ -58,6 +70,17 @@ impl ProgramInput {
                 output_directory: args[6].clone(),
                 protocol: Protocol::new(args[7].clone().as_str()) 
             },
+            "standard" => ProgramInput::Standard {
+                fastq: args[2].clone(),
+                paf: args[3].clone(),
+                restrander_config: args[4].clone(),
+                temp_fastq: args[5].clone(),
+                protocol: Protocol::new(args[6].clone().as_str())
+            },
+            "quick" => ProgramInput::Quick { 
+                fastq: args[2].clone(), 
+                paf: args[3].clone() 
+            },
             _ => panic!("Invalid first argument: {}", args[1])
         }
     }
@@ -73,18 +96,52 @@ fn main() {
             grid_test(GridTestInput { fastq, paf, config_dir, temp_fastq, protocol }),
         ProgramInput::CompareReads { fastq, paf, restrander_config, temp_fastq, output_directory, protocol } =>
             compare(fastq, paf, restrander_config, temp_fastq, output_directory, protocol),
+        ProgramInput::Standard { fastq, paf, restrander_config, temp_fastq, protocol } => 
+            standard(fastq, paf, restrander_config, temp_fastq, protocol),
+        ProgramInput::Quick { fastq, paf } =>
+            quick(fastq, paf)
     }
+}
+
+fn quick(fastq: String, paf: String) {
+    let paf_reads = paf::parse(paf);
+
+    let result = fastq::parse(fastq, paf_reads, false);
+
+    println!("{}", result);
 }
 
 fn compare(fastq: String, paf: String, restrander_config: String, temp_fastq: String, output_directory: String, protocol: Protocol) {
     let pychopper_config = SpecificProgramConfig::Pychopper(PychopperConfig {
-        backend: config::PychopperBackend::Edlib, 
+        backend: config::PychopperBackend::MachineLearning, 
         protocol: protocol
     });
 
     let paf_reads = paf::parse(paf);
 
     comparison::compare(fastq, restrander_config, pychopper_config, paf_reads, temp_fastq, output_directory);
+}
+
+fn standard(fastq: String, paf: String, restrander_config: String, temp_fastq: String, protocol: Protocol) {
+    let paf_reads = paf::parse(paf.clone());
+    let generic_config: GenericProgramConfig = GenericProgramConfig { input: fastq, output: temp_fastq };
+
+    let restrander_result = accuracy_timed_run_config(
+        generic_config.clone(), restrander_config, paf_reads.clone());
+
+    let pychopper_edlib_result = pychopper::accuracy_timed_run_config(
+        generic_config.clone(), 
+        SpecificProgramConfig::Pychopper(PychopperConfig { 
+            backend: config::PychopperBackend::Edlib, 
+            protocol: protocol.clone() 
+        }), paf_reads.clone());
+    let pychopper_ml_result = pychopper::accuracy_timed_run_config(
+        generic_config.clone(), SpecificProgramConfig::Pychopper(PychopperConfig { 
+            backend: config::PychopperBackend::MachineLearning,
+            protocol 
+        }), paf_reads.clone());
+
+    print_results(vec![restrander_result, pychopper_edlib_result, pychopper_ml_result]);
 }
 
 fn grid_test(input: GridTestInput) {

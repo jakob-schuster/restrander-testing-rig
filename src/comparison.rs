@@ -18,7 +18,7 @@ fn custom_difference(s1: HashSet<String>, s2: HashSet<String>) -> Vec<String> {
 fn string_vec_to_file(filename: String, strings: Vec<String>) {
     File::create(filename.clone())
         .expect(format!("Failed to create file {}", filename.clone()).as_str())
-        .write(strings.join("\n").as_bytes())
+        .write_all(strings.join("\n").as_bytes())
         .expect("Failed to write to file!");
 }
 

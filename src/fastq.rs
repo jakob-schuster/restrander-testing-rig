@@ -1,8 +1,8 @@
 use seq_io::fastq::{Reader,Record};
 use std::{str, collections::{HashMap, HashSet}};
 
-#[path = "paf.rs"] mod paf;
 use crate::paf::{PafRead, PafReads};
+use std::fmt;
 
 #[derive(Debug, Clone)]
 
@@ -23,12 +23,20 @@ impl AccuracyResult {
 
     fn to_percent(&self) -> AccuracyResult {
         AccuracyResult { 
-            correct: self.correct * 100 as f64, 
-            incorrect: self.incorrect * 100 as f64, 
-            ambiguous: self.ambiguous * 100 as f64 
+            correct: self.correct * 100_f64, 
+            incorrect: self.incorrect * 100_f64, 
+            ambiguous: self.ambiguous * 100_f64 
         }
     }
 }
+
+
+impl fmt::Display for AccuracyResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "correct {}\nincorrect {}\nambiguous {}", self.correct, self.incorrect, self.ambiguous)
+    }
+}
+
 
 pub struct AccuracyResultExact {
     pub correct: u64,
@@ -42,7 +50,7 @@ impl AccuracyResultExact {
     }
 }
 
-pub fn parse (filename: String, paf_reads: PafReads, is_pychopper: bool) -> AccuracyResult {
+pub fn parse(filename: String, paf_reads: PafReads, is_pychopper: bool) -> AccuracyResult {
 
 
     let size = paf_reads.size;
@@ -61,9 +69,9 @@ pub fn parse (filename: String, paf_reads: PafReads, is_pychopper: bool) -> Accu
         
         // get the name differently depending on whether this is pychopper
         let name = if is_pychopper {
-            record.id().unwrap().split("|").collect::<Vec<_>>()[1]
+            record.id().unwrap().split('|').collect::<Vec<_>>()[1]
         } else {
-            record.id().unwrap().split("|").collect::<Vec<_>>()[0]
+            record.id().unwrap().split('|').collect::<Vec<_>>()[0]
         };
         
         // skip non-matching records
@@ -101,23 +109,23 @@ impl CategorisedReads {
     }
 }
 
-pub fn parse_categorise (filename: String, paf_reads: PafReads, is_pychopper: bool) -> CategorisedReads {
+pub fn parse_categorise(filename: String, paf_reads: PafReads, is_pychopper: bool) -> CategorisedReads {
     let mut reader = Reader::from_path(filename).unwrap();
 
     let mut fastq_reads: HashMap<String, char> = HashMap::new();
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
         let name = if is_pychopper {
-            record.id().unwrap().split("|").collect::<Vec<_>>()[1]
+            record.id().unwrap().split('|').collect::<Vec<_>>()[1]
         } else {
             // restrander it goes to the 0 spot
-            record.id().unwrap().split("|").collect::<Vec<_>>()[0]
+            record.id().unwrap().split('|').collect::<Vec<_>>()[0]
         };
         
         // skip non-matching records
         let current = *record.head().last().unwrap();
 
-        fastq_reads.insert(name.to_string(), current.clone() as char);
+        fastq_reads.insert(name.to_string(), current as char);
     }
 
     let mut reads = CategorisedReads::new();
@@ -141,7 +149,7 @@ pub fn parse_categorise (filename: String, paf_reads: PafReads, is_pychopper: bo
     reads
 }
 
-pub fn parse_nanoprep (filename: String, paf_reads: &Vec<PafRead>) {
+pub fn parse_nanoprep(filename: String, paf_reads: &[PafRead]) {
 
     let mut correct = 0;
     let mut incorrect = 0;
@@ -167,10 +175,10 @@ pub fn parse_nanoprep (filename: String, paf_reads: &Vec<PafRead>) {
 
         // extract the strand from the tag line
         let strand = record_string
-            .split(" ").nth(7).unwrap()
+            .split(' ').nth(7).unwrap()
             .as_bytes()[7];
 
-        if strand != '-' as u8 && paf_reads[i].strand == '-' {
+        if strand != b'-' && paf_reads[i].strand == '-' {
             incorrect += 1;
             println!("incorrect!");
         } else {
