@@ -1,5 +1,8 @@
-use seq_io::fastq::{Reader,Record};
-use std::{str, collections::{HashMap, HashSet}};
+use seq_io::fastq::{Reader, Record};
+use std::{
+    collections::{HashMap, HashSet},
+    str,
+};
 
 use crate::paf::{PafRead, PafReads};
 use std::fmt;
@@ -22,21 +25,23 @@ impl AccuracyResult {
     }
 
     fn to_percent(&self) -> AccuracyResult {
-        AccuracyResult { 
-            correct: self.correct * 100_f64, 
-            incorrect: self.incorrect * 100_f64, 
-            ambiguous: self.ambiguous * 100_f64 
+        AccuracyResult {
+            correct: self.correct * 100_f64,
+            incorrect: self.incorrect * 100_f64,
+            ambiguous: self.ambiguous * 100_f64,
         }
     }
 }
 
-
 impl fmt::Display for AccuracyResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "correct {}\nincorrect {}\nambiguous {}", self.correct, self.incorrect, self.ambiguous)
+        write!(
+            f,
+            "correct {}\nincorrect {}\nambiguous {}",
+            self.correct, self.incorrect, self.ambiguous
+        )
     }
 }
-
 
 pub struct AccuracyResultExact {
     pub correct: u64,
@@ -50,13 +55,11 @@ impl AccuracyResultExact {
     }
 }
 
-pub fn parse(filename: String, paf_reads: PafReads, is_pychopper: bool) -> AccuracyResult {
-
-
+pub fn parse(filename: &str, paf_reads: &PafReads, is_pychopper: bool) -> AccuracyResult {
     let size = paf_reads.size;
     let mut result_exact: AccuracyResultExact = AccuracyResultExact {
-        correct: 0, 
-        incorrect: 0, 
+        correct: 0,
+        incorrect: 0,
         ambiguous: 0,
     };
 
@@ -66,18 +69,22 @@ pub fn parse(filename: String, paf_reads: PafReads, is_pychopper: bool) -> Accur
 
     while let Some(record) = reader.next() {
         let record = record.expect("Error reading record");
-        
+
         // get the name differently depending on whether this is pychopper
         let name = if is_pychopper {
             record.id().unwrap().split('|').collect::<Vec<_>>()[1]
         } else {
             record.id().unwrap().split('|').collect::<Vec<_>>()[0]
         };
-        
+
         // skip non-matching records
-        let strand = paf_reads.map.get(&name.to_string()).expect("Failed to read!").to_owned();
+        let strand = paf_reads
+            .map
+            .get(&name.to_string())
+            .expect("Failed to read!")
+            .to_owned();
         let current = *record.head().last().unwrap() as char;
-        
+
         if current == '?' {
             result_exact.ambiguous += 1;
         } else if current == strand {
@@ -96,7 +103,7 @@ pub fn parse(filename: String, paf_reads: PafReads, is_pychopper: bool) -> Accur
 pub struct CategorisedReads {
     pub correct: HashSet<String>,
     pub incorrect: HashSet<String>,
-    pub ambiguous: HashSet<String>
+    pub ambiguous: HashSet<String>,
 }
 
 impl CategorisedReads {
@@ -104,12 +111,16 @@ impl CategorisedReads {
         CategorisedReads {
             correct: HashSet::new(),
             incorrect: HashSet::new(),
-            ambiguous: HashSet::new()
+            ambiguous: HashSet::new(),
         }
     }
 }
 
-pub fn parse_categorise(filename: String, paf_reads: PafReads, is_pychopper: bool) -> CategorisedReads {
+pub fn parse_categorise(
+    filename: &str,
+    paf_reads: &PafReads,
+    is_pychopper: bool,
+) -> CategorisedReads {
     let mut reader = Reader::from_path(filename).unwrap();
 
     let mut fastq_reads: HashMap<String, char> = HashMap::new();
@@ -121,7 +132,7 @@ pub fn parse_categorise(filename: String, paf_reads: PafReads, is_pychopper: boo
             // restrander it goes to the 0 spot
             record.id().unwrap().split('|').collect::<Vec<_>>()[0]
         };
-        
+
         // skip non-matching records
         let current = *record.head().last().unwrap();
 
@@ -138,7 +149,14 @@ pub fn parse_categorise(filename: String, paf_reads: PafReads, is_pychopper: boo
 
         // categorise!
         if fastq_reads.contains_key(paf_key) {
-            if *paf_reads.map.get(&paf_key.clone()).expect("Paf map didn't have key") == *fastq_reads.get(&paf_key.clone()).expect("Fastq map didn't have key") {
+            if *paf_reads
+                .map
+                .get(&paf_key.clone())
+                .expect("Paf map didn't have key")
+                == *fastq_reads
+                    .get(&paf_key.clone())
+                    .expect("Fastq map didn't have key")
+            {
                 reads.correct.insert(paf_key.clone());
             } else {
                 reads.incorrect.insert(paf_key.clone());
@@ -149,8 +167,7 @@ pub fn parse_categorise(filename: String, paf_reads: PafReads, is_pychopper: boo
     reads
 }
 
-pub fn parse_nanoprep(filename: String, paf_reads: &[PafRead]) {
-
+pub fn parse_nanoprep(filename: &str, paf_reads: &[PafRead]) {
     let mut correct = 0;
     let mut incorrect = 0;
     let mut ambiguous = 0;
@@ -164,7 +181,10 @@ pub fn parse_nanoprep(filename: String, paf_reads: &[PafRead]) {
         let name = record.id().unwrap();
         println!("{} vs {}", name, paf_reads[i].name);
         while name != paf_reads[i].name {
-            println!("{} vs {} not the same so incrementing", name, paf_reads[i].name);
+            println!(
+                "{} vs {} not the same so incrementing",
+                name, paf_reads[i].name
+            );
             i += 1;
         }
 
@@ -174,9 +194,7 @@ pub fn parse_nanoprep(filename: String, paf_reads: &[PafRead]) {
         };
 
         // extract the strand from the tag line
-        let strand = record_string
-            .split(' ').nth(7).unwrap()
-            .as_bytes()[7];
+        let strand = record_string.split(' ').nth(7).unwrap().as_bytes()[7];
 
         if strand != b'-' && paf_reads[i].strand == '-' {
             incorrect += 1;
@@ -190,5 +208,8 @@ pub fn parse_nanoprep(filename: String, paf_reads: &[PafRead]) {
         // println!("{}", strand_tag);
     }
 
-    print!("Correct: {}\nIncorrect: {}\nAmbiguous: {}\n", correct, incorrect, ambiguous);
+    print!(
+        "Correct: {}\nIncorrect: {}\nAmbiguous: {}\n",
+        correct, incorrect, ambiguous
+    );
 }
